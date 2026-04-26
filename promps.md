@@ -12,3 +12,6 @@ apply it
 
 [2026-04-26T15:30:53+07:00]
 ahead and implement this SSE logic into the project files with using Pusher
+
+[2026-04-26T15:37:12+07:00]
+help me deploy this project on vercel. how can I deploy it.
