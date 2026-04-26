@@ -1,0 +1,5 @@
+- always write prompt log on file prompts.md with timestamp
+- alway read game machanism rule on game-rules.md and implement it
+- only push when i told you to push
+- if you not sure about the code, ask me
+- if you finished coding, run test (npm run build) and see if there is error and fix it
