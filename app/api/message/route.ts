@@ -10,10 +10,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
+    // Look up the sender's role from the user list
+    const users = await memoryStore.getUsers();
+    const sender = users.find((u) => u.id === senderId);
+
     const newMessage = {
       id: Math.random().toString(36).substring(7),
       senderId,
       senderName,
+      senderRole: sender?.role,
       content,
       timestamp: Date.now(),
     };

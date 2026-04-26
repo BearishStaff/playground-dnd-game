@@ -12,6 +12,7 @@ export interface Message {
   id: string;
   senderId: string;
   senderName: string;
+  senderRole?: Role;
   content: string;
   timestamp: number;
 }
