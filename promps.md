@@ -22,3 +22,6 @@ help me deploy this project on vercel. how can I deploy it.
 
 [2026-04-26T18:12:17+07:00]
 @[rules.md]if user leave chat (such as close browser), remove them from the party.
+
+[2026-04-26T18:19:11+07:00]
+make DM can kick party member from the session

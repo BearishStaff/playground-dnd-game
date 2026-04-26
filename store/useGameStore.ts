@@ -6,6 +6,7 @@ interface GameState {
   users: User[];
   messages: Message[];
   setCurrentUser: (user: User) => void;
+  clearCurrentUser: () => void;
   setUsers: (users: User[]) => void;
   addMessage: (msg: Message) => void;
   setMessages: (messages: Message[]) => void;
@@ -16,6 +17,7 @@ export const useGameStore = create<GameState>((set) => ({
   users: [],
   messages: [],
   setCurrentUser: (user) => set({ currentUser: user }),
+  clearCurrentUser: () => set({ currentUser: null }),
   setUsers: (users) => set({ users }),
   addMessage: (msg) => set((state) => ({ messages: [...state.messages, msg] })),
   setMessages: (messages) => set({ messages }),

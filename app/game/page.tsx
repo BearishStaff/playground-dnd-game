@@ -7,7 +7,7 @@ import { getPusherClient } from '../../lib/pusher';
 
 export default function Game() {
   const router = useRouter();
-  const { currentUser, users, messages, setUsers, setMessages, addMessage } = useGameStore();
+  const { currentUser, users, messages, setUsers, setMessages, addMessage, clearCurrentUser } = useGameStore();
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +42,19 @@ export default function Game() {
         .then((stateData) => setUsers(stateData.users || []));
     });
 
+    channel.bind('user_kicked', (payload: any) => {
+      // If this client is the one being kicked, redirect to home
+      if (payload.userId === currentUser?.id) {
+        clearCurrentUser();
+        router.push('/');
+      } else {
+        // Refresh roster for everyone else
+        fetch('/api/state')
+          .then((res) => res.json())
+          .then((stateData) => setUsers(stateData.users || []));
+      }
+    });
+
     channel.bind('new_message', (payload: any) => {
       addMessage(payload);
     });
@@ -49,7 +62,7 @@ export default function Game() {
     return () => {
       pusher.unsubscribe('dnd-game');
     };
-  }, [currentUser, router, setUsers, setMessages, addMessage]);
+  }, [currentUser, router, setUsers, setMessages, addMessage, clearCurrentUser]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -101,6 +114,20 @@ export default function Game() {
     });
   };
 
+  const handleKick = async (targetUserId: string) => {
+    if (!currentUser) return;
+    await fetch('/api/kick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requesterId: currentUser.id,
+        targetUserId,
+      }),
+    });
+  };
+
+  const isDM = currentUser?.role === 'DM';
+
   if (!currentUser) return null;
 
   return (
@@ -113,11 +140,22 @@ export default function Game() {
         <div className="p-4 flex-1 overflow-y-auto">
           <ul className="space-y-3">
             {users.map((user, i) => (
-              <li key={i} className="flex flex-col">
-                <span className="font-semibold text-zinc-200">{user.name}</span>
-                <span className="text-xs text-zinc-500 bg-zinc-800 w-max px-2 py-0.5 rounded mt-1">
-                  {user.role}
-                </span>
+              <li key={i} className="flex items-center justify-between group">
+                <div className="flex flex-col">
+                  <span className="font-semibold text-zinc-200">{user.name}</span>
+                  <span className="text-xs text-zinc-500 bg-zinc-800 w-max px-2 py-0.5 rounded mt-1">
+                    {user.role}
+                  </span>
+                </div>
+                {isDM && (
+                  <button
+                    onClick={() => handleKick(user.id)}
+                    className="opacity-0 group-hover:opacity-100 text-xs text-red-400 hover:text-red-300 bg-red-950/50 hover:bg-red-900/50 border border-red-800/50 px-2 py-1 rounded transition-all"
+                    title={`Kick ${user.name}`}
+                  >
+                    Kick
+                  </button>
+                )}
               </li>
             ))}
           </ul>
