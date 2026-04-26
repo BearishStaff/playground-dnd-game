@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '../../store/useGameStore';
 import { getPusherClient } from '../../lib/pusher';
@@ -9,7 +9,12 @@ export default function Game() {
   const router = useRouter();
   const { currentUser, users, messages, setUsers, setMessages, addMessage, clearCurrentUser } = useGameStore();
   const [inputValue, setInputValue] = useState('');
+  const [selectedDice, setSelectedDice] = useState<number>(20);
+  const [diceMenuOpen, setDiceMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const diceMenuRef = useRef<HTMLDivElement>(null);
+
+  const DICE_OPTIONS = [4, 6, 8, 10, 12, 20] as const;
 
   useEffect(() => {
     if (!currentUser) {
@@ -100,19 +105,31 @@ export default function Game() {
     });
   };
 
-  const handleRollDice = async () => {
+  const handleRollDice = async (sides: number) => {
     if (!currentUser) return;
-    const roll = Math.floor(Math.random() * 20) + 1;
+    const roll = Math.floor(Math.random() * sides) + 1;
     await fetch('/api/message', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         senderId: currentUser.id,
         senderName: currentUser.name,
-        content: `rolled a d20 and got: **${roll}**`,
+        content: `🎲 ${currentUser.name} roll 1d${sides} got {{${roll}}}`,
       }),
     });
+    setDiceMenuOpen(false);
   };
+
+  // Close dice menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (diceMenuRef.current && !diceMenuRef.current.contains(e.target as Node)) {
+        setDiceMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleKick = async (targetUserId: string) => {
     if (!currentUser) return;
@@ -194,20 +211,65 @@ export default function Game() {
         {/* Header */}
         <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-6 bg-zinc-900/50 backdrop-blur-md">
           <h1 className="text-lg font-semibold">Tavern Chat</h1>
-          <button 
-            onClick={handleRollDice}
-            className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 px-4 py-2 rounded-lg text-sm font-medium transition"
-          >
-            Roll d20
-          </button>
+          <div className="relative" ref={diceMenuRef}>
+            <button 
+              onClick={() => setDiceMenuOpen(!diceMenuOpen)}
+              className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
+            >
+              <span>🎲</span>
+              <span>Roll 1d{selectedDice}</span>
+              <svg className={`w-3 h-3 transition-transform ${diceMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {diceMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl shadow-black/50 overflow-hidden z-50 min-w-[160px]">
+                {DICE_OPTIONS.map((sides) => (
+                  <button
+                    key={sides}
+                    onClick={() => {
+                      setSelectedDice(sides);
+                      handleRollDice(sides);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-700 transition-colors flex items-center justify-between ${
+                      selectedDice === sides ? 'text-amber-400 bg-zinc-700/50' : 'text-zinc-200'
+                    }`}
+                  >
+                    <span>1d{sides}</span>
+                    <span className="text-zinc-500 text-xs">1–{sides}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </header>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.map((msg, i) => {
             const isMe = msg.senderId === currentUser.id;
-            const isRoll = msg.content.includes('rolled a d20');
+            const isRoll = msg.content.includes(' roll 1d') && msg.content.includes('got {{');
             const isDMMessage = msg.senderRole === 'DM';
+
+            // Parse roll messages to highlight the point
+            const renderContent = () => {
+              if (isRoll) {
+                const match = msg.content.match(/^(.+?) roll (1d\d+) got \{\{(\d+)\}\}$/);
+                if (match) {
+                  const [, rollerName, diceType, point] = match;
+                  return (
+                    <span>
+                      {rollerName} roll {diceType} got{' '}
+                      <span className="inline-block font-black text-lg px-2 py-0.5 rounded-lg bg-amber-400 text-zinc-950 shadow-lg shadow-amber-400/40 animate-bounce" style={{ animationDuration: '0.6s', animationIterationCount: 1 }}>
+                        {point}
+                      </span>
+                    </span>
+                  );
+                }
+              }
+              return msg.content;
+            };
+
             return (
               <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                 <span className={`text-xs mb-1 ml-1 flex items-center gap-1.5 ${
@@ -224,9 +286,9 @@ export default function Game() {
                   )}
                 </span>
                 <div 
-                  className={`max-w-[70%] px-4 py-2 rounded-2xl ${
+                  className={`max-w-[70%] px-4 py-2.5 rounded-2xl ${
                     isRoll 
-                      ? 'bg-amber-900/50 text-amber-200 border border-amber-700/50 italic'
+                      ? 'bg-gradient-to-r from-amber-900/60 to-orange-900/40 text-amber-100 border border-amber-600/50 shadow-lg shadow-amber-900/30'
                       : isDMMessage
                         ? 'bg-gradient-to-br from-amber-900/40 to-yellow-900/30 text-amber-100 border border-amber-600/40 shadow-lg shadow-amber-900/20' + (isMe ? ' rounded-br-none' : ' rounded-bl-none')
                         : isMe 
@@ -234,7 +296,7 @@ export default function Game() {
                           : 'bg-zinc-800 text-zinc-200 rounded-bl-none'
                   }`}
                 >
-                  {msg.content}
+                  {renderContent()}
                 </div>
               </div>
             );
