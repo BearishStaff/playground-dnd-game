@@ -1,4 +1,4 @@
-- write prompt log on file prompts.md with timestamp
+- write every prompt I input to you on file prompts.md with timestamp
 - write frontend with Typescript (Next.js)
 - read core requirement of this application from core-requirement.md
 - read game machanism rule on game-rules.md and implement it

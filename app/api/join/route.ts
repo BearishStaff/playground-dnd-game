@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       role,
     };
 
-    memoryStore.addUser(newUser);
+    await memoryStore.addUser(newUser);
 
     return NextResponse.json({ user: newUser });
   } catch (error) {

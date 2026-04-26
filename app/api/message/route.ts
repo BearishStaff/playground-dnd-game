@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       timestamp: Date.now(),
     };
 
-    memoryStore.addMessage(newMessage);
+    await memoryStore.addMessage(newMessage);
 
     return NextResponse.json({ message: newMessage });
   } catch (error) {

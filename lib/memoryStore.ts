@@ -15,34 +15,48 @@ export interface Message {
 }
 
 import { pusherServer } from './pusher';
+import { createClient } from 'redis';
 
-// In-memory state (Note: in serverless, this may reset on cold boots)
-const globalState: {
-  users: User[];
-  messages: Message[];
-} = {
-  users: [],
-  messages: [],
-};
+// Initialize Redis client
+const client = createClient({
+  url: process.env.REDIS_URL,
+});
+
+client.on('error', (err) => console.log('Redis Client Error', err));
+
+async function getRedisClient() {
+  if (!client.isOpen) {
+    await client.connect();
+  }
+  return client;
+}
 
 export const memoryStore = {
-  addUser(user: User) {
-    globalState.users.push(user);
-    this.broadcast({ type: 'user_joined', payload: user });
+  async addUser(user: User) {
+    const redis = await getRedisClient();
+    await redis.rPush('dnd:users', JSON.stringify(user));
+    await this.broadcast({ type: 'user_joined', payload: user });
   },
-  getUsers() {
-    return globalState.users;
+  async getUsers(): Promise<User[]> {
+    const redis = await getRedisClient();
+    const usersStr = await redis.lRange('dnd:users', 0, -1);
+    return usersStr.map((u) => JSON.parse(u)) as User[];
   },
-  addMessage(msg: Message) {
-    globalState.messages.push(msg);
+  async addMessage(msg: Message) {
+    const redis = await getRedisClient();
+    await redis.rPush('dnd:messages', JSON.stringify(msg));
+    
     // Keep only last 100 messages to prevent memory leak
-    if (globalState.messages.length > 100) {
-      globalState.messages.shift();
+    const len = await redis.lLen('dnd:messages');
+    if (len > 100) {
+      await redis.lPop('dnd:messages');
     }
-    this.broadcast({ type: 'new_message', payload: msg });
+    await this.broadcast({ type: 'new_message', payload: msg });
   },
-  getMessages() {
-    return globalState.messages;
+  async getMessages(): Promise<Message[]> {
+    const redis = await getRedisClient();
+    const messagesStr = await redis.lRange('dnd:messages', 0, -1);
+    return messagesStr.map((m) => JSON.parse(m)) as Message[];
   },
   async broadcast(data: any) {
     try {
