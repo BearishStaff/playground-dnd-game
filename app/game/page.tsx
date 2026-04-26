@@ -36,6 +36,12 @@ export default function Game() {
         .then((stateData) => setUsers(stateData.users || []));
     });
 
+    channel.bind('user_left', () => {
+      fetch('/api/state')
+        .then((res) => res.json())
+        .then((stateData) => setUsers(stateData.users || []));
+    });
+
     channel.bind('new_message', (payload: any) => {
       addMessage(payload);
     });
@@ -48,6 +54,20 @@ export default function Game() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (currentUser) {
+        // use navigator.sendBeacon for reliable delivery during unload
+        navigator.sendBeacon('/api/leave', JSON.stringify({ userId: currentUser.id }));
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [currentUser]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

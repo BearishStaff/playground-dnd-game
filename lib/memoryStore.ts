@@ -42,6 +42,18 @@ export const memoryStore = {
     const usersStr = await redis.lRange('dnd:users', 0, -1);
     return usersStr.map((u) => JSON.parse(u)) as User[];
   },
+  async removeUser(userId: string) {
+    const redis = await getRedisClient();
+    const usersStr = await redis.lRange('dnd:users', 0, -1);
+    const users = usersStr.map((u) => JSON.parse(u)) as User[];
+    const userToRemove = users.find(u => u.id === userId);
+    
+    if (userToRemove) {
+      // Remove from redis list by value
+      await redis.lRem('dnd:users', 0, JSON.stringify(userToRemove));
+      await this.broadcast({ type: 'user_left', payload: { userId } });
+    }
+  },
   async addMessage(msg: Message) {
     const redis = await getRedisClient();
     await redis.rPush('dnd:messages', JSON.stringify(msg));

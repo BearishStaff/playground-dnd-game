@@ -19,3 +19,6 @@ help me deploy this project on vercel. how can I deploy it.
 - [2026-04-26T11:00:03Z] Migrated from in-memory globalState to Vercel KV (Redis) to support multiple users on Vercel serverless environment.
 
 - [2026-04-26T11:04:24Z] Switched to using standard 'redis' package instead of @vercel/kv.
+
+[2026-04-26T18:12:17+07:00]
+@[rules.md]if user leave chat (such as close browser), remove them from the party.
