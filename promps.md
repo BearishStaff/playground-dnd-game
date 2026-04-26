@@ -25,3 +25,6 @@ help me deploy this project on vercel. how can I deploy it.
 
 [2026-04-26T18:19:11+07:00]
 make DM can kick party member from the session
+
+[2026-04-26T18:37:56+07:00]
+read the rule. make screen for select class and subclass in dnd for member parties. they can choose class after they enter their name.

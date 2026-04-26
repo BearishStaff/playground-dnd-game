@@ -4,6 +4,8 @@ export interface User {
   id: string;
   name: string;
   role: Role;
+  characterClass?: string;
+  subclass?: string;
 }
 
 export interface Message {

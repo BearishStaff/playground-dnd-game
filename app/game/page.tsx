@@ -133,24 +133,43 @@ export default function Game() {
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
       {/* Sidebar */}
-      <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+      <div className="w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col">
         <div className="p-4 border-b border-zinc-800">
-          <h2 className="text-xl font-bold text-red-500">Party Roster</h2>
+          <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-amber-400">Party Roster</h2>
+          <p className="text-xs text-zinc-500 mt-1">{users.length} adventurer{users.length !== 1 ? 's' : ''} in the tavern</p>
         </div>
         <div className="p-4 flex-1 overflow-y-auto">
           <ul className="space-y-3">
             {users.map((user, i) => (
-              <li key={i} className="flex items-center justify-between group">
-                <div className="flex flex-col">
-                  <span className="font-semibold text-zinc-200">{user.name}</span>
-                  <span className="text-xs text-zinc-500 bg-zinc-800 w-max px-2 py-0.5 rounded mt-1">
-                    {user.role}
+              <li key={i} className="flex items-center justify-between group p-2.5 rounded-lg hover:bg-zinc-800/50 transition-colors">
+                <div className="flex flex-col min-w-0">
+                  <span className="font-semibold text-zinc-200 truncate">
+                    {user.role === 'DM' ? '👑 ' : ''}{user.name}
                   </span>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <span className={`text-xs w-max px-2 py-0.5 rounded ${
+                      user.role === 'DM'
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : 'bg-zinc-800 text-zinc-500'
+                    }`}>
+                      {user.role === 'DM' ? 'Dungeon Master' : user.role}
+                    </span>
+                    {user.characterClass && (
+                      <span className="text-xs bg-red-500/15 text-red-300 px-2 py-0.5 rounded">
+                        {user.characterClass}
+                      </span>
+                    )}
+                  </div>
+                  {user.subclass && (
+                    <span className="text-xs text-zinc-500 mt-1 truncate">
+                      {user.subclass}
+                    </span>
+                  )}
                 </div>
-                {isDM && (
+                {isDM && user.id !== currentUser.id && (
                   <button
                     onClick={() => handleKick(user.id)}
-                    className="opacity-0 group-hover:opacity-100 text-xs text-red-400 hover:text-red-300 bg-red-950/50 hover:bg-red-900/50 border border-red-800/50 px-2 py-1 rounded transition-all"
+                    className="opacity-0 group-hover:opacity-100 text-xs text-red-400 hover:text-red-300 bg-red-950/50 hover:bg-red-900/50 border border-red-800/50 px-2 py-1 rounded transition-all shrink-0 ml-2"
                     title={`Kick ${user.name}`}
                   >
                     Kick
@@ -161,7 +180,12 @@ export default function Game() {
           </ul>
         </div>
         <div className="p-4 border-t border-zinc-800 text-sm text-zinc-400">
-          Logged in as <span className="font-bold text-zinc-200">{currentUser.name}</span>
+          <div>Logged in as <span className="font-bold text-zinc-200">{currentUser.name}</span></div>
+          {currentUser.characterClass && (
+            <div className="text-xs text-zinc-500 mt-1">
+              {currentUser.characterClass}{currentUser.subclass ? ` · ${currentUser.subclass}` : ''}
+            </div>
+          )}
         </div>
       </div>
 
