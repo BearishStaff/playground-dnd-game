@@ -6,3 +6,9 @@ I want to do with pure Next.js. no need to store message. what architecture and 
 
 [2026-04-26T15:17:03+07:00]
 apply it
+
+[2026-04-26T15:28:01+07:00]
+@[rules.md]how can other users get and send the message on the real time.
+
+[2026-04-26T15:30:53+07:00]
+ahead and implement this SSE logic into the project files with using Pusher

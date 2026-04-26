@@ -14,15 +14,15 @@ export interface Message {
   timestamp: number;
 }
 
+import { pusherServer } from './pusher';
+
 // In-memory state (Note: in serverless, this may reset on cold boots)
 const globalState: {
   users: User[];
   messages: Message[];
-  listeners: ((message: any) => void)[];
 } = {
   users: [],
   messages: [],
-  listeners: [],
 };
 
 export const memoryStore = {
@@ -44,13 +44,11 @@ export const memoryStore = {
   getMessages() {
     return globalState.messages;
   },
-  subscribe(listener: (data: any) => void) {
-    globalState.listeners.push(listener);
-    return () => {
-      globalState.listeners = globalState.listeners.filter((l) => l !== listener);
-    };
-  },
-  broadcast(data: any) {
-    globalState.listeners.forEach((listener) => listener(data));
+  async broadcast(data: any) {
+    try {
+      await pusherServer.trigger('dnd-game', data.type, data.payload);
+    } catch (e) {
+      console.error('Pusher error:', e);
+    }
   },
 };

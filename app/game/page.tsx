@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '../../store/useGameStore';
+import { getPusherClient } from '../../lib/pusher';
 
 export default function Game() {
   const router = useRouter();
@@ -24,25 +25,23 @@ export default function Game() {
         setMessages(data.messages || []);
       });
 
-    // Connect to SSE stream
-    const eventSource = new EventSource('/api/stream');
+    // Connect to Pusher
+    const pusher = getPusherClient();
+    const channel = pusher.subscribe('dnd-game');
 
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'connected') {
-        console.log('Connected to real-time stream');
-      } else if (data.type === 'user_joined') {
-        // Fetch fresh state to be safe, or just append
-        fetch('/api/state')
-          .then((res) => res.json())
-          .then((stateData) => setUsers(stateData.users || []));
-      } else if (data.type === 'new_message') {
-        addMessage(data.payload);
-      }
-    };
+    channel.bind('user_joined', () => {
+      // Fetch fresh state to be safe, or just append
+      fetch('/api/state')
+        .then((res) => res.json())
+        .then((stateData) => setUsers(stateData.users || []));
+    });
+
+    channel.bind('new_message', (payload: any) => {
+      addMessage(payload);
+    });
 
     return () => {
-      eventSource.close();
+      pusher.unsubscribe('dnd-game');
     };
   }, [currentUser, router, setUsers, setMessages, addMessage]);
 
